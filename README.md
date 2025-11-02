@@ -1,6 +1,6 @@
 # Pet Pontual
 
-App para agendamento de banho e vacinas de pets. Esta é a estrutura inicial de um aplicativo Flutter gerada via Codex.
+App para agendamento de banho e vacinas de pets. Esta é a estrutura inicial de um aplicativo Flutter.
 
 ## Como começar
 
