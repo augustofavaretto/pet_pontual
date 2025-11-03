@@ -41,12 +41,12 @@ class _EmptyPetsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.pets, size: 80, color: Colors.grey),
             SizedBox(height: 16),
             Text(
@@ -87,7 +87,27 @@ class _PetsListView extends StatelessWidget {
             leading: _PetAvatar(pet: pet),
             title: Text(pet.name),
             subtitle: Text(pet.description),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Editar',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _editPet(context, pet),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: Theme.of(context).colorScheme.error,
+                  tooltip: 'Excluir',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _confirmDelete(context, pet),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.chevron_right),
+              ],
+            ),
             onTap: () => _openPetDetails(context, pet),
           ),
         );
@@ -102,6 +122,41 @@ class _PetsListView extends StatelessWidget {
       PetDetailPage.routeName,
       arguments: PetDetailPageArgs(petId: pet.id),
     );
+  }
+
+  void _editPet(BuildContext context, Pet pet) {
+    Navigator.of(context).pushNamed<void>(
+      AddPetPage.routeName,
+      arguments: AddPetPageArgs(petId: pet.id),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, Pet pet) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir pet'),
+        content: Text('Tem certeza que deseja excluir ${pet.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      if (!context.mounted) return;
+      context.read<PetController>().removePet(pet.id);
+    }
   }
 }
 

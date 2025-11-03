@@ -155,7 +155,9 @@ class _PetDetailPageState extends State<PetDetailPage> {
         final filterFields = [
           SizedBox(
             width: fieldWidth,
-            child: DropdownButtonFormField<PetEventType?>(
+            child:
+                // ignore: deprecated_member_use
+                DropdownButtonFormField<PetEventType?>(
               value: _selectedType,
               decoration: const InputDecoration(
                 labelText: 'Tipo de evento',
@@ -249,10 +251,11 @@ class _PetDetailPageState extends State<PetDetailPage> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
+            onTap: () => _openEditEvent(context, event),
             leading: CircleAvatar(
               backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               child: Icon(
-                _iconForType(event.type),
+                event.type.icon,
                 color: Theme.of(context).colorScheme.onPrimaryContainer,
               ),
             ),
@@ -261,6 +264,21 @@ class _PetDetailPageState extends State<PetDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_formatDate(event.date)),
+                if (event.services.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: event.services
+                        .map(
+                          (service) => Chip(
+                            label: Text(service),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
                 if (event.note != null && event.note!.trim().isNotEmpty)
                   Text(
                     event.note!,
@@ -271,6 +289,25 @@ class _PetDetailPageState extends State<PetDetailPage> {
                     'Lembrete: ${_formatDateTime(event.reminderDate!)}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Editar evento',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _openEditEvent(context, event),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: Theme.of(context).colorScheme.error,
+                  tooltip: 'Excluir evento',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _confirmDeleteEvent(context, event),
+                ),
               ],
             ),
           ),
@@ -303,6 +340,48 @@ class _PetDetailPageState extends State<PetDetailPage> {
       AddPetEventPage.routeName,
       arguments: AddPetEventPageArgs(petId: pet.id),
     );
+  }
+
+  void _openEditEvent(BuildContext context, PetEvent event) {
+    Navigator.of(context).pushNamed<void>(
+      AddPetEventPage.routeName,
+      arguments: AddPetEventPageArgs(
+        petId: widget.petId,
+        eventId: event.id,
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteEvent(BuildContext context, PetEvent event) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir evento'),
+        content: Text(
+          'Deseja excluir o evento "${event.type.label}" de ${_formatDate(event.date)}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      if (!context.mounted) return;
+      context
+          .read<PetController>()
+          .removeEvent(petId: widget.petId, eventId: event.id);
+    }
   }
 
   Future<void> _pickDateRange() async {
@@ -390,25 +469,6 @@ class _PetDetailPageState extends State<PetDetailPage> {
       return monthsLabel;
     }
     return 'menor de um mês';
-  }
-
-  IconData _iconForType(PetEventType type) {
-    switch (type) {
-      case PetEventType.vaccine:
-        return Icons.vaccines_outlined;
-      case PetEventType.bath:
-        return Icons.shower_outlined;
-      case PetEventType.deworming:
-        return Icons.science_outlined;
-      case PetEventType.grooming:
-        return Icons.content_cut_outlined;
-      case PetEventType.feeding:
-        return Icons.pets_outlined;
-      case PetEventType.vetVisit:
-        return Icons.medical_services_outlined;
-      case PetEventType.other:
-        return Icons.event_note_outlined;
-    }
   }
 
   int _sortEvents(PetEvent a, PetEvent b) {

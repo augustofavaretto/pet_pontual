@@ -4,15 +4,142 @@ import 'package:provider/provider.dart';
 import '../controllers/pet_controller.dart';
 import '../models/pet_event.dart';
 
+class _ServiceSection {
+  const _ServiceSection({this.title, required this.options});
+
+  final String? title;
+  final List<String> options;
+}
+
+const Map<PetEventType, List<_ServiceSection>> _serviceCatalog = {
+  PetEventType.bath: [
+    _ServiceSection(
+      title: 'Serviços de banho',
+      options: [
+        'Banho tradicional',
+        'Banho medicamentoso',
+        'Banho a seco',
+        'Hidratação',
+      ],
+    ),
+  ],
+  PetEventType.grooming: [
+    _ServiceSection(
+      title: 'Serviços de tosa e estética',
+      options: [
+        'Tosa higiênica',
+        'Tosa completa',
+        'Tosa na tesoura',
+        'Penteado/Acabamento',
+        'Corte de unhas',
+        'Limpeza de ouvidos',
+        'Escovação dental',
+      ],
+    ),
+  ],
+  PetEventType.deworming: [
+    _ServiceSection(
+      title: 'Tratamentos de vermífugo',
+      options: [
+        'Dose oral',
+        'Dose tópica',
+        'Dose injetável',
+        'Vermífugo para filhotes',
+        'Vermífugo reforço',
+      ],
+    ),
+  ],
+  PetEventType.feeding: [
+    _ServiceSection(
+      title: 'Rotina de alimentação',
+      options: [
+        'Ração seca',
+        'Ração úmida',
+        'Dieta natural',
+        'Suplementação',
+        'Troca de ração',
+      ],
+    ),
+  ],
+  PetEventType.vetVisit: [
+    _ServiceSection(
+      title: 'Tipos de consulta',
+      options: [
+        'Check-up',
+        'Retorno',
+        'Emergência',
+        'Especialista',
+        'Exames laboratoriais',
+      ],
+    ),
+  ],
+  PetEventType.vaccine: [
+    _ServiceSection(
+      title: 'Cães',
+      options: [
+        'V8/V10 (Polivalente)',
+        'Raiva',
+        'Gripe canina (Bordetella)',
+        'Giardíase',
+        'Leishmaniose',
+        'Tosse dos canis (Bronchiguard)',
+      ],
+    ),
+    _ServiceSection(
+      title: 'Gatos',
+      options: [
+        'V4/V5 (Polivalente)',
+        'Raiva',
+        'FeLV (Leucemia felina)',
+        'Rinotraqueíte',
+        'Panleucopenia',
+      ],
+    ),
+    _ServiceSection(
+      title: 'Roedores',
+      options: [
+        'Raiva',
+        'Enterite bacteriana',
+        'Peste de roedores',
+      ],
+    ),
+    _ServiceSection(
+      title: 'Pássaros',
+      options: [
+        'Newcastle',
+        'Bouba aviária',
+        'Bronquite infecciosa',
+        'Gumboro',
+      ],
+    ),
+  ],
+  PetEventType.other: [
+    _ServiceSection(
+      title: 'Serviços gerais',
+      options: [
+        'Adestramento',
+        'Passeio',
+        'Hospedagem',
+        'Transporte',
+        'Outro',
+      ],
+    ),
+  ],
+};
+
 class AddPetEventPage extends StatefulWidget {
   static const routeName = '/novo_evento';
 
   const AddPetEventPage({
     super.key,
     required this.petId,
+    this.eventId,
   });
 
   final String petId;
+  final String? eventId;
+
+  bool get isEditing => eventId != null;
 
   @override
   State<AddPetEventPage> createState() => _AddPetEventPageState();
@@ -27,6 +154,20 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
 
   bool _reminderEnabled = false;
   DateTime? _reminderDateTime;
+  bool _loadedInitialValues = false;
+  final Set<String> _selectedServices = <String>{};
+
+  PetEvent? _existingEvent() {
+    if (!widget.isEditing) return null;
+    final controller = context.read<PetController>();
+    try {
+      return controller
+          .eventsFor(widget.petId)
+          .firstWhere((event) => event.id == widget.eventId);
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void dispose() {
@@ -36,6 +177,21 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_loadedInitialValues && widget.isEditing) {
+      final event = _existingEvent();
+      if (event != null) {
+        _selectedType = event.type;
+        _eventDate = event.date;
+        _noteController.text = event.note ?? '';
+        _reminderDateTime = event.reminderDate;
+        _reminderEnabled = event.reminderDate != null;
+        _selectedServices
+          ..clear()
+          ..addAll(event.services);
+      }
+      _loadedInitialValues = true;
+    }
+
     final petName = context.select<PetController, String?>(
       (controller) => controller.findById(widget.petId)?.name,
     );
@@ -53,7 +209,8 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Novo evento para $petName'),
+        title: Text(
+            widget.isEditing ? 'Editar evento' : 'Novo evento para $petName'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -63,6 +220,7 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ignore: deprecated_member_use
                 DropdownButtonFormField<PetEventType>(
                   value: _selectedType,
                   decoration: const InputDecoration(
@@ -76,7 +234,12 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
                         ),
                       )
                       .toList(),
-                  onChanged: (value) => setState(() => _selectedType = value),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedType = value;
+                      _selectedServices.clear();
+                    });
+                  },
                   validator: (value) =>
                       value == null ? 'Selecione um tipo' : null,
                 ),
@@ -87,11 +250,20 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
                   onTap: _pickEventDate,
                 ),
                 const SizedBox(height: 16),
+                if (_selectedType != null) ...[
+                  _ServicesChecklist(
+                    sections: _serviceCatalog[_selectedType!] ??
+                        const <_ServiceSection>[],
+                    selected: _selectedServices,
+                    onChanged: _toggleService,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 TextFormField(
                   controller: _noteController,
                   decoration: const InputDecoration(
-                    labelText: 'Descrição / observações',
-                    hintText: 'Opcional',
+                    labelText: 'Observações adicionais',
+                    hintText: 'Digite observações extras, se necessário',
                   ),
                   maxLines: 4,
                 ),
@@ -120,7 +292,8 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
                 const SizedBox(height: 32),
                 FilledButton(
                   onPressed: _submit,
-                  child: const Text('Salvar evento'),
+                  child: Text(
+                      widget.isEditing ? 'Salvar alterações' : 'Salvar evento'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton(
@@ -235,19 +408,128 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
     if (!isValid) return;
 
     final note = _noteController.text.trim();
-    final event = PetEvent(
-      type: _selectedType!,
-      date: _eventDate,
-      note: note.isEmpty ? null : note,
-      reminderDate: _reminderEnabled ? _reminderDateTime : null,
-    );
+    final reminder = _reminderEnabled ? _reminderDateTime : null;
 
-    context.read<PetController>().addEvent(
-          petId: widget.petId,
-          event: event,
-        );
+    final controller = context.read<PetController>();
+
+    if (widget.isEditing && widget.eventId != null) {
+      controller.updateEvent(
+        petId: widget.petId,
+        eventId: widget.eventId!,
+        type: _selectedType,
+        date: _eventDate,
+        note: note.isEmpty ? null : note,
+        reminderDate: reminder,
+        services: _selectedServices.toList(),
+      );
+    } else {
+      final event = PetEvent(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        type: _selectedType!,
+        date: _eventDate,
+        note: note.isEmpty ? null : note,
+        reminderDate: reminder,
+        services: _selectedServices.toList(),
+      );
+
+      controller.addEvent(
+        petId: widget.petId,
+        event: event,
+      );
+    }
 
     Navigator.of(context).pop();
+  }
+
+  void _toggleService(String service, bool enabled) {
+    setState(() {
+      if (enabled) {
+        _selectedServices.add(service);
+      } else {
+        _selectedServices.remove(service);
+      }
+    });
+  }
+}
+
+class _ServicesChecklist extends StatelessWidget {
+  const _ServicesChecklist({
+    required this.sections,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<_ServiceSection> sections;
+  final Set<String> selected;
+  final void Function(String service, bool value) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sections.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Serviços realizados',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        ...sections.map((section) {
+          return _ServiceSectionList(
+            section: section,
+            selected: selected,
+            onChanged: onChanged,
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _ServiceSectionList extends StatelessWidget {
+  const _ServiceSectionList({
+    required this.section,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final _ServiceSection section;
+  final Set<String> selected;
+  final void Function(String service, bool value) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (section.title != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              section.title!,
+              style: theme.textTheme.titleSmall!
+                  .copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+        ...section.options.map(
+          (service) => CheckboxListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            value: selected.contains(service),
+            onChanged: (value) => onChanged(service, value ?? false),
+            title: Text(service),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
   }
 }
 

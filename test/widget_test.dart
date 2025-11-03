@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:pet_pontual/main.dart';
-import 'package:pet_pontual/models/pet.dart';
+import 'package:pet_pontual/controllers/pet_controller.dart';
 import 'package:pet_pontual/screens/home_page.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   testWidgets('HomePage exibe lista de pets cadastrados',
@@ -20,9 +21,10 @@ void main() {
   testWidgets('HomePage mostra estado vazio quando não há pets',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: HomePage(
-          pets: <Pet>[],
+      ChangeNotifierProvider(
+        create: (_) => PetController(loadSampleData: false),
+        child: const MaterialApp(
+          home: HomePage(),
         ),
       ),
     );

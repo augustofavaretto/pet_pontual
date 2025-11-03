@@ -9,7 +9,11 @@ import '../controllers/pet_controller.dart';
 class AddPetPage extends StatefulWidget {
   static const routeName = '/novo_pet';
 
-  const AddPetPage({super.key});
+  const AddPetPage({super.key, this.petId});
+
+  final String? petId;
+
+  bool get isEditing => petId != null;
 
   @override
   State<AddPetPage> createState() => _AddPetPageState();
@@ -24,6 +28,9 @@ class _AddPetPageState extends State<AddPetPage> {
   String? _selectedType;
   DateTime? _birthDate;
   XFile? _photo;
+  String? _existingAvatarPath;
+  String? _existingAvatarAsset;
+  bool _didLoadInitialValues = false;
 
   static const List<String> _speciesSuggestions = [
     'Cachorro',
@@ -43,10 +50,33 @@ class _AddPetPageState extends State<AddPetPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLoadInitialValues || !widget.isEditing) return;
+
+    final pet = context.read<PetController>().findById(widget.petId!);
+    if (pet != null) {
+      _nameController.text = pet.name;
+      _breedController.text = pet.breed ?? '';
+      _selectedType = pet.type;
+      _birthDate = pet.birthDate;
+      _existingAvatarPath = pet.avatarPath;
+      _existingAvatarAsset = pet.avatarAsset;
+    }
+
+    _didLoadInitialValues = true;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final typeOptions = List<String>.from(_speciesSuggestions);
+    if (_selectedType != null && !typeOptions.contains(_selectedType)) {
+      typeOptions.insert(0, _selectedType!);
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cadastrar novo pet'),
+        title: Text(widget.isEditing ? 'Editar pet' : 'Cadastrar novo pet'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -58,6 +88,8 @@ class _AddPetPageState extends State<AddPetPage> {
               children: [
                 _PhotoPickerPreview(
                   photo: _photo,
+                  existingPath: _photo == null ? _existingAvatarPath : null,
+                  existingAsset: _photo == null ? _existingAvatarAsset : null,
                   onTap: _pickImage,
                 ),
                 const SizedBox(height: 24),
@@ -76,13 +108,14 @@ class _AddPetPageState extends State<AddPetPage> {
                   },
                 ),
                 const SizedBox(height: 16),
+                // ignore: deprecated_member_use
                 DropdownButtonFormField<String>(
                   value: _selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Tipo',
                     hintText: 'Selecione o tipo do pet',
                   ),
-                  items: _speciesSuggestions
+                  items: typeOptions
                       .map(
                         (species) => DropdownMenuItem<String>(
                           value: species,
@@ -115,7 +148,8 @@ class _AddPetPageState extends State<AddPetPage> {
                 const SizedBox(height: 32),
                 FilledButton(
                   onPressed: _submitForm,
-                  child: const Text('Salvar'),
+                  child:
+                      Text(widget.isEditing ? 'Salvar alterações' : 'Salvar'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton(
@@ -159,7 +193,11 @@ class _AddPetPageState extends State<AddPetPage> {
     );
 
     if (image != null) {
-      setState(() => _photo = image);
+      setState(() {
+        _photo = image;
+        _existingAvatarPath = null;
+        _existingAvatarAsset = null;
+      });
     }
   }
 
@@ -167,15 +205,34 @@ class _AddPetPageState extends State<AddPetPage> {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
-    context.read<PetController>().addPet(
-          name: _nameController.text.trim(),
-          type: _selectedType!.trim(),
-          breed: _breedController.text.trim().isEmpty
-              ? null
-              : _breedController.text.trim(),
-          avatarPath: _photo?.path,
-          birthDate: _birthDate,
-        );
+    final controller = context.read<PetController>();
+    final name = _nameController.text.trim();
+    final type = _selectedType!.trim();
+    final breedText = _breedController.text.trim();
+    final breed = breedText.isEmpty ? null : breedText;
+    final avatarPath = _photo?.path ?? _existingAvatarPath;
+    final avatarAsset = _photo != null ? null : _existingAvatarAsset;
+
+    if (widget.isEditing) {
+      controller.updatePet(
+        petId: widget.petId!,
+        name: name,
+        type: type,
+        breed: breed,
+        birthDate: _birthDate,
+        avatarPath: avatarPath,
+        avatarAsset: avatarAsset,
+      );
+    } else {
+      controller.addPet(
+        name: name,
+        type: type,
+        breed: breed,
+        avatarPath: avatarPath,
+        birthDate: _birthDate,
+        avatarAsset: avatarAsset,
+      );
+    }
 
     Navigator.of(context).pop();
   }
@@ -185,15 +242,19 @@ class _PhotoPickerPreview extends StatelessWidget {
   const _PhotoPickerPreview({
     required this.photo,
     required this.onTap,
+    this.existingPath,
+    this.existingAsset,
   });
 
   final XFile? photo;
   final VoidCallback onTap;
+  final String? existingPath;
+  final String? existingAsset;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hasPhoto = photo != null;
+    final imageProvider = _resolveImageProvider();
 
     return GestureDetector(
       onTap: onTap,
@@ -207,11 +268,11 @@ class _PhotoPickerPreview extends StatelessWidget {
               color: theme.colorScheme.outlineVariant,
             ),
           ),
-          child: hasPhoto
+          child: imageProvider != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    File(photo!.path),
+                  child: Image(
+                    image: imageProvider,
                     fit: BoxFit.cover,
                   ),
                 )
@@ -242,6 +303,22 @@ class _PhotoPickerPreview extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  ImageProvider<Object>? _resolveImageProvider() {
+    if (photo != null) {
+      return FileImage(File(photo!.path));
+    }
+    if (existingPath != null && existingPath!.isNotEmpty) {
+      final file = File(existingPath!);
+      if (file.existsSync()) {
+        return FileImage(file);
+      }
+    }
+    if (existingAsset != null && existingAsset!.isNotEmpty) {
+      return AssetImage(existingAsset!);
+    }
+    return null;
   }
 }
 

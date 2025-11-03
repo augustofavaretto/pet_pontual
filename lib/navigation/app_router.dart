@@ -5,6 +5,12 @@ import '../screens/add_pet_page.dart';
 import '../screens/home_page.dart';
 import '../screens/pet_detail_page.dart';
 
+class AddPetPageArgs {
+  const AddPetPageArgs({this.petId});
+
+  final String? petId;
+}
+
 class PetDetailPageArgs {
   const PetDetailPageArgs({required this.petId});
 
@@ -12,22 +18,25 @@ class PetDetailPageArgs {
 }
 
 class AddPetEventPageArgs {
-  const AddPetEventPageArgs({required this.petId});
+  const AddPetEventPageArgs({required this.petId, this.eventId});
 
   final String petId;
+  final String? eventId;
 }
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case HomePage.routeName:
-      case '/':
         return MaterialPageRoute<void>(
           builder: (_) => const HomePage(),
         );
       case AddPetPage.routeName:
+        final args = settings.arguments as AddPetPageArgs?;
         return MaterialPageRoute<void>(
-          builder: (_) => const AddPetPage(),
+          builder: (_) => AddPetPage(
+            petId: args?.petId,
+          ),
           fullscreenDialog: true,
         );
       case PetDetailPage.routeName:
@@ -38,7 +47,10 @@ class AppRouter {
       case AddPetEventPage.routeName:
         final args = settings.arguments as AddPetEventPageArgs;
         return MaterialPageRoute<void>(
-          builder: (_) => AddPetEventPage(petId: args.petId),
+          builder: (_) => AddPetEventPage(
+            petId: args.petId,
+            eventId: args.eventId,
+          ),
           fullscreenDialog: true,
         );
       default:
