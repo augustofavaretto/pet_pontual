@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/pet_controller.dart';
@@ -31,15 +33,13 @@ class _AddPetPageState extends State<AddPetPage> {
   String? _existingAvatarPath;
   String? _existingAvatarAsset;
   bool _didLoadInitialValues = false;
+  String? _pendingDeletionPath;
 
   static const List<String> _speciesSuggestions = [
     'Cachorro',
     'Gato',
     'Pássaro',
-    'Peixe',
     'Roedor',
-    'Réptil',
-    'Outro',
   ];
 
   @override
@@ -62,6 +62,7 @@ class _AddPetPageState extends State<AddPetPage> {
       _birthDate = pet.birthDate;
       _existingAvatarPath = pet.avatarPath;
       _existingAvatarAsset = pet.avatarAsset;
+      _pendingDeletionPath = null;
     }
 
     _didLoadInitialValues = true;
@@ -195,13 +196,14 @@ class _AddPetPageState extends State<AddPetPage> {
     if (image != null) {
       setState(() {
         _photo = image;
+        _pendingDeletionPath ??= _existingAvatarPath;
         _existingAvatarPath = null;
         _existingAvatarAsset = null;
       });
     }
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
@@ -210,11 +212,16 @@ class _AddPetPageState extends State<AddPetPage> {
     final type = _selectedType!.trim();
     final breedText = _breedController.text.trim();
     final breed = breedText.isEmpty ? null : breedText;
-    final avatarPath = _photo?.path ?? _existingAvatarPath;
+    String? avatarPath = _existingAvatarPath;
+    if (_photo != null) {
+      avatarPath = await _persistImage(_photo!);
+      await _deleteLocalFile(_pendingDeletionPath);
+      _pendingDeletionPath = null;
+    }
     final avatarAsset = _photo != null ? null : _existingAvatarAsset;
 
     if (widget.isEditing) {
-      controller.updatePet(
+      await controller.updatePet(
         petId: widget.petId!,
         name: name,
         type: type,
@@ -224,7 +231,7 @@ class _AddPetPageState extends State<AddPetPage> {
         avatarAsset: avatarAsset,
       );
     } else {
-      controller.addPet(
+      await controller.addPet(
         name: name,
         type: type,
         breed: breed,
@@ -234,7 +241,36 @@ class _AddPetPageState extends State<AddPetPage> {
       );
     }
 
+    if (!mounted) return;
     Navigator.of(context).pop();
+  }
+
+  Future<String> _persistImage(XFile file) async {
+    final documentsDir = await getApplicationDocumentsDirectory();
+    final photosDir = Directory(p.join(documentsDir.path, 'pet_photos'));
+    if (!await photosDir.exists()) {
+      await photosDir.create(recursive: true);
+    }
+
+    final fileExtension = p.extension(file.path);
+    final fileName =
+        'pet_${DateTime.now().microsecondsSinceEpoch}$fileExtension';
+    final newFullPath = p.join(photosDir.path, fileName);
+
+    await File(file.path).copy(newFullPath);
+    return p.join('pet_photos', fileName);
+  }
+
+  Future<void> _deleteLocalFile(String? path) async {
+    if (path == null || path.startsWith('assets/')) return;
+    final documentsDir = await getApplicationDocumentsDirectory();
+    final absolutePath = path.startsWith(documentsDir.path)
+        ? path
+        : p.join(documentsDir.path, path);
+    final file = File(absolutePath);
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 }
 

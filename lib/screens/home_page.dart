@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../controllers/pet_controller.dart';
 import '../models/pet.dart';
 import '../navigation/app_router.dart';
+import '../widgets/pet_pontual_logo.dart';
 import 'add_pet_page.dart';
 import 'pet_detail_page.dart';
 
@@ -16,17 +17,46 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pets = context.watch<PetController>().pets;
+    final controller = context.watch<PetController>();
+    final pets = controller.pets;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Seus Pets'),
+        toolbarHeight: 140,
+        title: const Padding(
+          padding: EdgeInsets.only(top: 32),
+          child: PetPontualLogo(),
+        ),
+        centerTitle: true,
       ),
-      body: pets.isEmpty ? const _EmptyPetsView() : _PetsListView(pets: pets),
-      floatingActionButton: FloatingActionButton(
+      body: controller.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Seus Pets',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: pets.isEmpty
+                      ? const _EmptyPetsView()
+                      : _PetsListView(pets: pets),
+                ),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openPetForm(context),
-        tooltip: 'Adicionar pet',
-        child: const Icon(Icons.add),
+        label: const Text('Cadastrar pet'),
+        icon: const Icon(Icons.add),
       ),
     );
   }
@@ -155,7 +185,7 @@ class _PetsListView extends StatelessWidget {
 
     if (shouldDelete == true) {
       if (!context.mounted) return;
-      context.read<PetController>().removePet(pet.id);
+      await context.read<PetController>().removePet(pet.id);
     }
   }
 }

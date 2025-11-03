@@ -1,5 +1,15 @@
 import 'pet_event.dart';
 
+class PetFields {
+  static const String id = 'id';
+  static const String name = 'name';
+  static const String type = 'type';
+  static const String breed = 'breed';
+  static const String avatarAsset = 'avatar_asset';
+  static const String avatarPath = 'avatar_path';
+  static const String birthDate = 'birth_date';
+}
+
 class Pet {
   const Pet({
     required this.id,
@@ -42,6 +52,35 @@ class Pet {
       avatarPath: avatarPath ?? this.avatarPath,
       birthDate: birthDate ?? this.birthDate,
       events: events ?? List<PetEvent>.from(this.events),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      PetFields.id: id,
+      PetFields.name: name,
+      PetFields.type: type,
+      PetFields.breed: breed,
+      PetFields.avatarAsset: avatarAsset,
+      PetFields.avatarPath: avatarPath,
+      PetFields.birthDate: birthDate?.millisecondsSinceEpoch,
+    };
+  }
+
+  factory Pet.fromMap(Map<String, Object?> map,
+      [List<PetEvent> events = const []]) {
+    return Pet(
+      id: map[PetFields.id] as String,
+      name: map[PetFields.name] as String,
+      type: map[PetFields.type] as String,
+      breed: map[PetFields.breed] as String?,
+      avatarAsset: map[PetFields.avatarAsset] as String?,
+      avatarPath: map[PetFields.avatarPath] as String?,
+      birthDate: map[PetFields.birthDate] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(
+              map[PetFields.birthDate] as int),
+      events: events,
     );
   }
 }

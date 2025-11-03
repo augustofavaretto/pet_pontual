@@ -152,8 +152,6 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
   late DateTime _eventDate = DateTime.now();
   PetEventType? _selectedType;
 
-  bool _reminderEnabled = false;
-  DateTime? _reminderDateTime;
   bool _loadedInitialValues = false;
   final Set<String> _selectedServices = <String>{};
 
@@ -183,8 +181,6 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
         _selectedType = event.type;
         _eventDate = event.date;
         _noteController.text = event.note ?? '';
-        _reminderDateTime = event.reminderDate;
-        _reminderEnabled = event.reminderDate != null;
         _selectedServices
           ..clear()
           ..addAll(event.services);
@@ -267,28 +263,6 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
                   ),
                   maxLines: 4,
                 ),
-                const SizedBox(height: 24),
-                SwitchListTile.adaptive(
-                  value: _reminderEnabled,
-                  onChanged: _toggleReminder,
-                  title: const Text('Adicionar lembrete'),
-                  subtitle:
-                      const Text('Receber um alerta futuro para este evento'),
-                ),
-                if (_reminderEnabled) ...[
-                  const SizedBox(height: 8),
-                  _DatePickerTile(
-                    label: 'Data do lembrete',
-                    dateTime: _reminderDateTime ?? _eventDate,
-                    onTap: _pickReminderDate,
-                  ),
-                  const SizedBox(height: 12),
-                  _TimePickerTile(
-                    time: TimeOfDay.fromDateTime(
-                        _reminderDateTime ?? DateTime.now()),
-                    onTap: _pickReminderTime,
-                  ),
-                ],
                 const SizedBox(height: 32),
                 FilledButton(
                   onPressed: _submit,
@@ -322,105 +296,32 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
     if (selected != null) {
       setState(() {
         _eventDate = selected;
-        if (!_reminderEnabled) return;
-        final reminder = _reminderDateTime ?? selected;
-        _reminderDateTime = DateTime(
-          selected.year,
-          selected.month,
-          selected.day,
-          reminder.hour,
-          reminder.minute,
-        );
       });
     }
   }
 
-  Future<void> _pickReminderDate() async {
-    final initial = _reminderDateTime ?? _eventDate;
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-      helpText: 'Data do lembrete',
-      cancelText: 'Cancelar',
-      confirmText: 'Confirmar',
-    );
-
-    if (selected != null) {
-      setState(() {
-        final current = _reminderDateTime ?? DateTime.now();
-        _reminderDateTime = DateTime(
-          selected.year,
-          selected.month,
-          selected.day,
-          current.hour,
-          current.minute,
-        );
-      });
-    }
-  }
-
-  Future<void> _pickReminderTime() async {
-    final current = _reminderDateTime ?? DateTime.now();
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(current),
-      helpText: 'Horário do lembrete',
-      cancelText: 'Cancelar',
-      confirmText: 'Confirmar',
-    );
-
-    if (picked != null) {
-      setState(() {
-        final date = _reminderDateTime ?? DateTime.now();
-        _reminderDateTime = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          picked.hour,
-          picked.minute,
-        );
-      });
-    }
-  }
-
-  void _toggleReminder(bool enabled) {
-    setState(() {
-      _reminderEnabled = enabled;
-      if (enabled && _reminderDateTime == null) {
-        final now = DateTime.now();
-        _reminderDateTime = now.isAfter(_eventDate)
-            ? now.add(const Duration(days: 7))
-            : DateTime(
-                _eventDate.year,
-                _eventDate.month,
-                _eventDate.day,
-                now.hour,
-                now.minute,
-              );
-      }
-    });
-  }
-
-  void _submit() {
+  Future<void> _submit() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
 
     final note = _noteController.text.trim();
-    final reminder = _reminderEnabled ? _reminderDateTime : null;
+    final existingReminder = widget.isEditing ? _existingEvent()?.reminderDate : null;
 
     final controller = context.read<PetController>();
 
     if (widget.isEditing && widget.eventId != null) {
-      controller.updateEvent(
-        petId: widget.petId,
-        eventId: widget.eventId!,
-        type: _selectedType,
+      final updatedEvent = PetEvent(
+        id: widget.eventId!,
+        type: _selectedType!,
         date: _eventDate,
         note: note.isEmpty ? null : note,
-        reminderDate: reminder,
+        reminderDate: existingReminder,
         services: _selectedServices.toList(),
+      );
+
+      await controller.updateEvent(
+        petId: widget.petId,
+        updatedEvent: updatedEvent,
       );
     } else {
       final event = PetEvent(
@@ -428,16 +329,17 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
         type: _selectedType!,
         date: _eventDate,
         note: note.isEmpty ? null : note,
-        reminderDate: reminder,
+        reminderDate: null,
         services: _selectedServices.toList(),
       );
 
-      controller.addEvent(
+      await controller.addEvent(
         petId: widget.petId,
         event: event,
       );
     }
 
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 

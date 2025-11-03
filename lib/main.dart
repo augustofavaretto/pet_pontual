@@ -22,7 +22,8 @@ class PetPontualApp extends StatelessWidget {
         title: 'Pet Pontual',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+          colorScheme:
+              ColorScheme.fromSeed(seedColor: const Color(0xFF0EA5A7)),
           useMaterial3: true,
         ),
         initialRoute: HomePage.routeName,

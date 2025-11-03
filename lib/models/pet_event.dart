@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
@@ -46,6 +48,36 @@ class PetEvent extends Equatable {
     );
   }
 
+  Map<String, dynamic> toMap(String petId) {
+    return {
+      'id': id,
+      'pet_id': petId,
+      'type': type.name,
+      'date': date.millisecondsSinceEpoch,
+      'note': note,
+      'reminder_date': reminderDate?.millisecondsSinceEpoch,
+      'services': jsonEncode(services),
+    };
+  }
+
+  factory PetEvent.fromMap(Map<String, Object?> map) {
+    final servicesRaw = map['services'] as String?;
+    final List<String> services = servicesRaw == null
+        ? const []
+        : List<String>.from(jsonDecode(servicesRaw) as List<dynamic>);
+
+    return PetEvent(
+      id: map['id'] as String,
+      type: PetEventTypeLabel.fromName(map['type'] as String),
+      date: DateTime.fromMillisecondsSinceEpoch(map['date'] as int),
+      note: map['note'] as String?,
+      reminderDate: map['reminder_date'] == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(map['reminder_date'] as int),
+      services: services,
+    );
+  }
+
   @override
   List<Object?> get props => [id, type, date, note, reminderDate, services];
 }
@@ -87,5 +119,10 @@ extension PetEventTypeLabel on PetEventType {
       case PetEventType.other:
         return Icons.event_note_outlined;
     }
+  }
+
+  static PetEventType fromName(String name) {
+    return PetEventType.values.firstWhere((type) => type.name == name,
+        orElse: () => PetEventType.other);
   }
 }

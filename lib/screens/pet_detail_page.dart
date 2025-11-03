@@ -378,7 +378,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
 
     if (shouldDelete == true) {
       if (!context.mounted) return;
-      context
+      await context
           .read<PetController>()
           .removeEvent(petId: widget.petId, eventId: event.id);
     }
