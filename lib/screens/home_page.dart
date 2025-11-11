@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../controllers/pet_controller.dart';
 import '../models/pet.dart';
 import '../navigation/app_router.dart';
+import '../theme/app_colors.dart';
 import '../widgets/pet_pontual_logo.dart';
 import 'add_pet_page.dart';
 import 'pet_detail_page.dart';
@@ -77,7 +78,7 @@ class _EmptyPetsView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.pets, size: 80, color: Colors.grey),
+            Icon(Icons.pets, size: 80, color: AppColors.emptyStateIcon),
             SizedBox(height: 16),
             Text(
               'Você ainda não cadastrou nenhum pet.',

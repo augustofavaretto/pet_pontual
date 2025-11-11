@@ -18,6 +18,7 @@ ios/Flutter/flutter_export_environment.sh
 # Others
 *.iml
 pubspec.lock
+*.DS_Store
 *.dart.js
 *.info.json
 *.js

@@ -305,7 +305,8 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
     if (!isValid) return;
 
     final note = _noteController.text.trim();
-    final existingReminder = widget.isEditing ? _existingEvent()?.reminderDate : null;
+    final existingReminder =
+        widget.isEditing ? _existingEvent()?.reminderDate : null;
 
     final controller = context.read<PetController>();
 

@@ -1,5 +1,5 @@
 name: pet_pontual
-description: Aplicativo Flutter de exemplo criado pela estruturação via Codex.
+description: Aplicativo Flutter de exemplo para gerenciar eventos de pets.
 publish_to: "none"
 
 version: 1.0.0+1
@@ -24,7 +24,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
-
+  sqflite_common_ffi: ^2.3.3
+  
 flutter:
   uses-material-design: true
   assets:

@@ -67,7 +67,8 @@ class PetController extends ChangeNotifier {
     );
 
     await _repository.insertPet(storedPet);
-    _pets.insert(0, storedPet.copyWith(avatarPath: _toAbsolutePath(relativeAvatarPath)));
+    _pets.insert(
+        0, storedPet.copyWith(avatarPath: _toAbsolutePath(relativeAvatarPath)));
     notifyListeners();
   }
 
@@ -136,7 +137,8 @@ class PetController extends ChangeNotifier {
 
     final pet = _pets[petIndex];
     final events = List<PetEvent>.from(pet.events);
-    final eventIndex = events.indexWhere((event) => event.id == updatedEvent.id);
+    final eventIndex =
+        events.indexWhere((event) => event.id == updatedEvent.id);
     if (eventIndex == -1) return;
 
     events[eventIndex] = updatedEvent;
