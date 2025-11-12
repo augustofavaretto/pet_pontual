@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pet_pontual/data/pet_repository.dart';
 import 'package:pet_pontual/models/pet.dart';
 import 'package:pet_pontual/models/pet_event.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {

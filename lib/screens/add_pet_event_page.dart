@@ -216,9 +216,8 @@ class _AddPetEventPageState extends State<AddPetEventPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ignore: deprecated_member_use
                 DropdownButtonFormField<PetEventType>(
-                  value: _selectedType,
+                  initialValue: _selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Tipo de evento',
                   ),
@@ -465,28 +464,5 @@ class _DatePickerTile extends StatelessWidget {
     final month = date.month.toString().padLeft(2, '0');
     final year = date.year.toString();
     return '$day/$month/$year';
-  }
-}
-
-class _TimePickerTile extends StatelessWidget {
-  const _TimePickerTile({
-    required this.time,
-    required this.onTap,
-  });
-
-  final TimeOfDay time;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final formatted = time.format(context);
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: const Text('Horário do lembrete'),
-      subtitle: Text(formatted),
-      onTap: onTap,
-      trailing: const Icon(Icons.schedule_outlined),
-    );
   }
 }

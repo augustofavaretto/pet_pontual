@@ -109,9 +109,8 @@ class _AddPetPageState extends State<AddPetPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                // ignore: deprecated_member_use
                 DropdownButtonFormField<String>(
-                  value: _selectedType,
+                  initialValue: _selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Tipo',
                     hintText: 'Selecione o tipo do pet',

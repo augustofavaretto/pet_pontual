@@ -156,9 +156,8 @@ class _PetDetailPageState extends State<PetDetailPage> {
           SizedBox(
             width: fieldWidth,
             child:
-                // ignore: deprecated_member_use
                 DropdownButtonFormField<PetEventType?>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: const InputDecoration(
                 labelText: 'Tipo de evento',
                 border: OutlineInputBorder(),
