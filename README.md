@@ -58,4 +58,4 @@ O `MultiProvider` definido em `lib/main.dart` injeta o `PetController` na árvor
 
 ---
 
-Qualquer dúvida ou sugestão, fique à vontade para abrir uma issue ou contribuir com um pull request. Boas contribuições! :)
+Qualquer dúvida ou sugestão, ficamos a disposição! :)
