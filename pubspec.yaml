@@ -1,6 +1,10 @@
 name: pet_pontual
 description: Aplicativo Flutter de exemplo para gerenciar eventos de pets.
 publish_to: "none"
+homepage: https://github.com/augustofavaretto/pet_pontual
+repository: https://github.com/augustofavaretto/pet_pontual
+issue_tracker: https://github.com/augustofavaretto/pet_pontual/issues
+documentation: https://github.com/augustofavaretto/pet_pontual/blob/main/README.md
 
 version: 1.0.0+1
 

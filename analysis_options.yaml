@@ -1,6 +1,15 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - build/**
+    - lib/**.g.dart
+  language:
+    strict-inference: true
+
 linter:
   rules:
     avoid_print: true
     prefer_const_constructors: true
+    prefer_single_quotes: true
+    sort_child_properties_last: true

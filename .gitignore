@@ -10,6 +10,7 @@ doc/api/
 # Build outputs
 build/
 ios/Flutter/flutter_export_environment.sh
+coverage/
 
 # IntelliJ/VS Code
 .idea/
@@ -25,3 +26,8 @@ pubspec.lock
 *.js_
 *.js.deps
 *.js.map
+*.log
+*.keystore
+*.jks
+.env.local
+.env.development
