@@ -17,7 +17,7 @@ const Map<PetEventType, List<_ServiceSection>> _serviceCatalog = {
       title: 'Serviços de banho',
       options: [
         'Banho tradicional',
-        'Banho medicamentoso',
+        'Banho terapêutico',
         'Banho a seco',
         'Hidratação',
       ],
